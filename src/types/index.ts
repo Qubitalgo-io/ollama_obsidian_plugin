@@ -1,12 +1,22 @@
+export type AIProvider = 'ollama' | 'openai' | 'anthropic' | 'openrouter';
+
 export interface OllamaSettings {
+    provider: AIProvider;
     ollamaUrl: string;
+    openaiApiKey: string;
+    anthropicApiKey: string;
+    openrouterApiKey: string;
     defaultModel: string;
+    openaiModel: string;
+    anthropicModel: string;
+    openrouterModel: string;
     temperature: number;
     maxTokens: number;
     contextLines: number;
     streamingEnabled: boolean;
     focusModeHotkey: string;
     quickActions: QuickAction[];
+    chatHistory: Record<string, ConversationEntry>;
 }
 
 export interface QuickAction {
@@ -96,8 +106,15 @@ export interface CodeBlockInfo {
 }
 
 export const DEFAULT_SETTINGS: OllamaSettings = {
+    provider: 'ollama',
     ollamaUrl: 'http://localhost:11434',
+    openaiApiKey: '',
+    anthropicApiKey: '',
+    openrouterApiKey: '',
     defaultModel: '',
+    openaiModel: 'gpt-4o',
+    anthropicModel: 'claude-sonnet-4-20250514',
+    openrouterModel: 'anthropic/claude-sonnet-4',
     temperature: 0.7,
     maxTokens: 50000,
     contextLines: 10,
@@ -108,5 +125,6 @@ export const DEFAULT_SETTINGS: OllamaSettings = {
         { label: 'Explain', prompt: 'Explain the following in simple terms:' },
         { label: 'Expand', prompt: 'Expand on the following with more details:' },
         { label: 'Improve', prompt: 'Improve the writing quality of the following:' }
-    ]
+    ],
+    chatHistory: {}
 };

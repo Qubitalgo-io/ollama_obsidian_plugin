@@ -1,5 +1,5 @@
 import { App, Editor } from 'obsidian';
-import { OllamaClient } from '../api/ollama-client';
+import { AIClient } from '../api/ai-client';
 import { PDFParser } from '../parsers/pdf-parser';
 import { ConversationHistory } from '../features/conversation';
 import { OllamaSettings, PDFContent, ModelInfo } from '../types';
@@ -8,7 +8,7 @@ import { ActionBar } from './action-bar';
 export class ChatPopover {
     private _app: App;
     private _settings: OllamaSettings;
-    private _client: OllamaClient;
+    private _client: AIClient;
     private _pdfParser: PDFParser;
     private _conversation: ConversationHistory;
     private _actionBar: ActionBar;
@@ -20,11 +20,13 @@ export class ChatPopover {
     private _models: ModelInfo[] = [];
     private _isGenerating: boolean = false;
     private _currentNoteId: string = '';
+    private _isDragging: boolean = false;
+    private _dragOffset: { x: number; y: number } = { x: 0, y: 0 };
 
     constructor(
         app: App,
         settings: OllamaSettings,
-        client: OllamaClient,
+        client: AIClient,
         pdfParser: PDFParser,
         conversation: ConversationHistory,
         actionBar: ActionBar
@@ -69,31 +71,52 @@ export class ChatPopover {
     private _createPopover(position: { top: number; left: number }): void {
         this._containerEl = document.createElement('div');
         this._containerEl.className = 'ollama-chat-popover';
-        this._containerEl.style.top = `${position.top}px`;
-        this._containerEl.style.left = `${position.left}px`;
+        this._containerEl.style.top = `${Math.max(20, position.top - 100)}px`;
+        this._containerEl.style.left = `${Math.max(20, position.left)}px`;
 
         const header = document.createElement('div');
         header.className = 'ollama-popover-header';
-        header.innerHTML = '<span>Ollama Assistant</span>';
         this._containerEl.appendChild(header);
+
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'ollama-drag-handle';
+        dragHandle.textContent = 'AI Assistant';
+        header.appendChild(dragHandle);
+        this._setupDragging(dragHandle);
+
+        const headerRight = document.createElement('div');
+        headerRight.className = 'ollama-header-right';
+        header.appendChild(headerRight);
+
+        const providerLabel = document.createElement('span');
+        providerLabel.className = 'ollama-provider-label';
+        providerLabel.textContent = this._settings.provider.toUpperCase();
+        headerRight.appendChild(providerLabel);
 
         this._modelSelect = document.createElement('select');
         this._modelSelect.className = 'ollama-model-select';
+        const currentModel = this._client.getCurrentModel();
         for (const model of this._models) {
             const option = document.createElement('option');
             option.value = model.name;
             option.textContent = model.name;
-            if (model.name === this._settings.defaultModel) {
+            if (model.name === currentModel) {
                 option.selected = true;
             }
             this._modelSelect.appendChild(option);
         }
-        header.appendChild(this._modelSelect);
+        headerRight.appendChild(this._modelSelect);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'ollama-close-btn';
+        closeBtn.textContent = 'X';
+        closeBtn.addEventListener('click', () => this.hide());
+        headerRight.appendChild(closeBtn);
 
         this._inputEl = document.createElement('textarea');
         this._inputEl.className = 'ollama-input';
-        this._inputEl.placeholder = 'Ask anything...';
-        this._inputEl.rows = 3;
+        this._inputEl.placeholder = 'Ask anything... (Cmd+Enter to send)';
+        this._inputEl.rows = 4;
         this._containerEl.appendChild(this._inputEl);
 
         const dropZone = document.createElement('div');
@@ -136,13 +159,87 @@ export class ChatPopover {
         stopBtn.style.display = 'none';
         buttonRow.appendChild(stopBtn);
 
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'ollama-clear-btn';
+        clearBtn.textContent = 'Clear';
+        clearBtn.addEventListener('click', async () => {
+            await this._conversation.clearConversation(this._currentNoteId);
+            if (this._responseEl) this._responseEl.innerHTML = '';
+            if (this._inputEl) this._inputEl.value = '';
+            this._renderHistory();
+        });
+        buttonRow.appendChild(clearBtn);
+
         this._containerEl.appendChild(buttonRow);
+
+        const historyContainer = document.createElement('div');
+        historyContainer.className = 'ollama-history-container';
+        this._containerEl.appendChild(historyContainer);
 
         this._responseEl = document.createElement('div');
         this._responseEl.className = 'ollama-response';
         this._containerEl.appendChild(this._responseEl);
 
         document.body.appendChild(this._containerEl);
+        
+        this._renderHistory();
+    }
+
+    private _renderHistory(): void {
+        const historyContainer = this._containerEl?.querySelector('.ollama-history-container');
+        if (!historyContainer) return;
+
+        historyContainer.innerHTML = '';
+        const messages = this._conversation.getMessages(this._currentNoteId);
+        
+        if (messages.length === 0) return;
+
+        for (const msg of messages) {
+            const msgEl = document.createElement('div');
+            msgEl.className = `ollama-history-msg ollama-history-${msg.role}`;
+            
+            const roleLabel = document.createElement('span');
+            roleLabel.className = 'ollama-history-role';
+            roleLabel.textContent = msg.role === 'user' ? 'You' : 'AI';
+            msgEl.appendChild(roleLabel);
+
+            const contentEl = document.createElement('div');
+            contentEl.className = 'ollama-history-content';
+            contentEl.textContent = msg.content.length > 300 
+                ? msg.content.substring(0, 300) + '...' 
+                : msg.content;
+            msgEl.appendChild(contentEl);
+
+            historyContainer.appendChild(msgEl);
+        }
+
+        historyContainer.scrollTop = historyContainer.scrollHeight;
+    }
+
+    private _setupDragging(handle: HTMLElement): void {
+        handle.addEventListener('mousedown', (e) => {
+            if (!this._containerEl) return;
+            this._isDragging = true;
+            const rect = this._containerEl.getBoundingClientRect();
+            this._dragOffset = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            handle.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!this._isDragging || !this._containerEl) return;
+            const newX = Math.max(0, e.clientX - this._dragOffset.x);
+            const newY = Math.max(0, e.clientY - this._dragOffset.y);
+            this._containerEl.style.left = `${newX}px`;
+            this._containerEl.style.top = `${newY}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            this._isDragging = false;
+            handle.style.cursor = 'grab';
+        });
     }
 
     private _setupDropZone(dropZone: HTMLElement): void {
@@ -252,7 +349,8 @@ export class ChatPopover {
             prompt = this._pdfParser.createSummaryPrompt(this._pdfContents) + '\n\n' + userInput;
         }
 
-        this._conversation.addUserMessage(this._currentNoteId, prompt);
+        await this._conversation.addUserMessage(this._currentNoteId, prompt);
+        this._renderHistory();
 
         const selectedModel = this._modelSelect?.value || this._settings.defaultModel || this._models[0]?.name;
 
@@ -260,8 +358,10 @@ export class ChatPopover {
         const startLine = cursor.line + 1;
         editor.replaceRange('\n', cursor);
         let streamedContent = '';
-        let lastLineCount = 1;
         let firstChunk = true;
+        
+        const insertMarker = '<<OLLAMA_STREAM>>';
+        editor.setLine(startLine, insertMarker);
 
         try {
             const messages = this._conversation.getConversationContext(this._currentNoteId);
@@ -271,10 +371,8 @@ export class ChatPopover {
                     model: selectedModel,
                     messages,
                     stream: this._settings.streamingEnabled,
-                    options: {
-                        temperature: this._settings.temperature,
-                        num_predict: this._settings.maxTokens
-                    }
+                    temperature: this._settings.temperature,
+                    maxTokens: this._settings.maxTokens
                 },
                 (chunk) => {
                     if (this._responseEl) {
@@ -284,18 +382,19 @@ export class ChatPopover {
                         }
                         this._responseEl.textContent += chunk;
                     }
-                    const prevContent = streamedContent;
                     streamedContent += chunk;
-                    const prevLineCount = prevContent.split('\n').length;
-                    const newLineCount = streamedContent.split('\n').length;
-                    const startPos = { line: startLine, ch: 0 };
-                    const endPos = { line: startLine + lastLineCount - 1, ch: editor.getLine(startLine + lastLineCount - 1)?.length || 0 };
-                    editor.replaceRange(streamedContent, startPos, endPos);
-                    lastLineCount = newLineCount;
                 }
             );
 
-            this._conversation.addAssistantMessage(this._currentNoteId, response.content);
+            const fullContent = editor.getValue();
+            const markerIndex = fullContent.indexOf(insertMarker);
+            if (markerIndex !== -1) {
+                const newContent = fullContent.replace(insertMarker, streamedContent);
+                editor.setValue(newContent);
+            }
+
+            await this._conversation.addAssistantMessage(this._currentNoteId, response.content);
+            this._renderHistory();
             this._showActionBar(editor, response.content);
 
         } catch (error: any) {

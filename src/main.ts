@@ -7,6 +7,7 @@ import {
 } from 'obsidian';
 import { OllamaSettings, DEFAULT_SETTINGS } from './types';
 import { OllamaClient } from './api/ollama-client';
+import { AIClient } from './api/ai-client';
 import { PDFParser } from './parsers/pdf-parser';
 import { FillDetector } from './features/fill-detector';
 import { CodeActions } from './features/code-actions';
@@ -20,6 +21,7 @@ import { OllamaSettingTab } from './settings';
 export default class OllamaPlugin extends Plugin {
     settings: OllamaSettings = DEFAULT_SETTINGS;
     ollamaClient!: OllamaClient;
+    aiClient!: AIClient;
     pdfParser!: PDFParser;
     fillDetector!: FillDetector;
     codeActions!: CodeActions;
@@ -33,16 +35,18 @@ export default class OllamaPlugin extends Plugin {
         await this.loadSettings();
 
         this.ollamaClient = new OllamaClient(this.settings.ollamaUrl);
+        this.aiClient = new AIClient(this.settings);
         this.pdfParser = new PDFParser();
         this.fillDetector = new FillDetector();
         this.codeActions = new CodeActions();
         this.conversation = new ConversationHistory();
+        this.conversation.initialize(this.settings, () => this.saveSettings());
         this.actionBar = new ActionBar(this.app);
 
         this.chatPopover = new ChatPopover(
             this.app,
             this.settings,
-            this.ollamaClient,
+            this.aiClient,
             this.pdfParser,
             this.conversation,
             this.actionBar

@@ -99,7 +99,7 @@ export const DEFAULT_SETTINGS: OllamaSettings = {
     ollamaUrl: 'http://localhost:11434',
     defaultModel: '',
     temperature: 0.7,
-    maxTokens: 16384,
+    maxTokens: 50000,
     contextLines: 10,
     streamingEnabled: true,
     focusModeHotkey: 'Ctrl+Shift+F',

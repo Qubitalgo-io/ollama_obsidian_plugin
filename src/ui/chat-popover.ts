@@ -88,11 +88,6 @@ export class ChatPopover {
         headerRight.className = 'ollama-header-right';
         header.appendChild(headerRight);
 
-        const providerLabel = document.createElement('span');
-        providerLabel.className = 'ollama-provider-label';
-        providerLabel.textContent = this._settings.provider.toUpperCase();
-        headerRight.appendChild(providerLabel);
-
         this._modelSelect = document.createElement('select');
         this._modelSelect.className = 'ollama-model-select';
         const currentModel = this._client.getCurrentModel();
@@ -352,7 +347,7 @@ export class ChatPopover {
         await this._conversation.addUserMessage(this._currentNoteId, prompt);
         this._renderHistory();
 
-        const selectedModel = this._modelSelect?.value || this._settings.defaultModel || this._models[0]?.name;
+        const selectedModel = this._modelSelect?.value || this._settings.model || this._models[0]?.name;
 
         const cursor = editor.getCursor();
         const startLine = cursor.line + 1;

@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import { OllamaSettings, DEFAULT_SETTINGS, AIProvider } from './types';
+import { OllamaSettings, DEFAULT_SETTINGS } from './types';
 import OllamaPlugin from './main';
 
 export class OllamaSettingTab extends PluginSettingTab {
@@ -14,179 +14,53 @@ export class OllamaSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'AI Provider Settings' });
+        containerEl.createEl('h2', { text: 'AI Configuration' });
+
+        containerEl.createEl('p', { 
+            text: 'Configure your AI provider. Supports Ollama (local), OpenAI, Anthropic, Qwen, Grok, or any OpenAI-compatible API.',
+            cls: 'setting-item-description'
+        });
 
         new Setting(containerEl)
-            .setName('AI Provider')
-            .setDesc('Select which AI service to use')
-            .addDropdown((dropdown) => {
-                dropdown.addOption('ollama', 'Ollama (Local)');
-                dropdown.addOption('openai', 'OpenAI');
-                dropdown.addOption('anthropic', 'Anthropic (Claude)');
-                dropdown.addOption('openrouter', 'OpenRouter');
-                dropdown.setValue(this.plugin.settings.provider);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.provider = value as AIProvider;
-                    await this.plugin.saveSettings();
-                    this.display();
-                });
-            });
-
-        if (this.plugin.settings.provider === 'ollama') {
-            this._displayOllamaSettings(containerEl);
-        } else if (this.plugin.settings.provider === 'openai') {
-            this._displayOpenAISettings(containerEl);
-        } else if (this.plugin.settings.provider === 'anthropic') {
-            this._displayAnthropicSettings(containerEl);
-        } else if (this.plugin.settings.provider === 'openrouter') {
-            this._displayOpenRouterSettings(containerEl);
-        }
-
-        this._displayCommonSettings(containerEl);
-        this._displayQuickActions(containerEl);
-    }
-
-    private _displayOllamaSettings(containerEl: HTMLElement): void {
-        containerEl.createEl('h3', { text: 'Ollama Configuration' });
-
-        new Setting(containerEl)
-            .setName('Ollama URL')
-            .setDesc('The URL of your Ollama server')
+            .setName('API Endpoint')
+            .setDesc('The base URL of your AI API. Examples: http://localhost:11434 (Ollama), https://api.openai.com (OpenAI), https://api.anthropic.com (Anthropic), https://dashscope.aliyuncs.com/compatible-mode (Qwen), https://api.x.ai (Grok)')
             .addText((text) => text
                 .setPlaceholder('http://localhost:11434')
-                .setValue(this.plugin.settings.ollamaUrl)
+                .setValue(this.plugin.settings.apiEndpoint)
                 .onChange(async (value) => {
-                    this.plugin.settings.ollamaUrl = value;
+                    this.plugin.settings.apiEndpoint = value;
                     await this.plugin.saveSettings();
                 }));
 
         new Setting(containerEl)
-            .setName('Default Model')
-            .setDesc('The default model to use for generation')
-            .addDropdown(async (dropdown) => {
-                dropdown.addOption('', 'Auto-detect');
-                try {
-                    const models = await this.plugin.ollamaClient.fetchModels();
-                    for (const model of models) {
-                        dropdown.addOption(model.name, model.name);
-                    }
-                } catch {
-                    dropdown.addOption('', 'Failed to fetch models');
-                }
-                dropdown.setValue(this.plugin.settings.defaultModel);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.defaultModel = value;
-                    await this.plugin.saveSettings();
-                });
-            });
-    }
-
-    private _displayOpenAISettings(containerEl: HTMLElement): void {
-        containerEl.createEl('h3', { text: 'OpenAI Configuration' });
-
-        new Setting(containerEl)
             .setName('API Key')
-            .setDesc('Your OpenAI API key (starts with sk-)')
+            .setDesc('Your API key (leave empty for local Ollama)')
             .addText((text) => {
                 text.inputEl.type = 'password';
                 text.setPlaceholder('sk-...')
-                    .setValue(this.plugin.settings.openaiApiKey)
+                    .setValue(this.plugin.settings.apiKey)
                     .onChange(async (value) => {
-                        this.plugin.settings.openaiApiKey = value;
+                        this.plugin.settings.apiKey = value;
                         await this.plugin.saveSettings();
                     });
             });
 
         new Setting(containerEl)
             .setName('Model')
-            .setDesc('Select OpenAI model')
-            .addDropdown((dropdown) => {
-                dropdown.addOption('gpt-4o', 'GPT-4o');
-                dropdown.addOption('gpt-4o-mini', 'GPT-4o Mini');
-                dropdown.addOption('gpt-4-turbo', 'GPT-4 Turbo');
-                dropdown.addOption('gpt-3.5-turbo', 'GPT-3.5 Turbo');
-                dropdown.addOption('o1-preview', 'O1 Preview');
-                dropdown.addOption('o1-mini', 'O1 Mini');
-                dropdown.setValue(this.plugin.settings.openaiModel);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.openaiModel = value;
+            .setDesc('The model name to use (e.g., gpt-4o, claude-sonnet-4-20250514, qwen-plus, grok-2)')
+            .addText((text) => text
+                .setPlaceholder('gpt-4o')
+                .setValue(this.plugin.settings.model)
+                .onChange(async (value) => {
+                    this.plugin.settings.model = value;
                     await this.plugin.saveSettings();
-                });
-            });
-    }
+                }));
 
-    private _displayAnthropicSettings(containerEl: HTMLElement): void {
-        containerEl.createEl('h3', { text: 'Anthropic Configuration' });
-
-        new Setting(containerEl)
-            .setName('API Key')
-            .setDesc('Your Anthropic API key')
-            .addText((text) => {
-                text.inputEl.type = 'password';
-                text.setPlaceholder('sk-ant-...')
-                    .setValue(this.plugin.settings.anthropicApiKey)
-                    .onChange(async (value) => {
-                        this.plugin.settings.anthropicApiKey = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(containerEl)
-            .setName('Model')
-            .setDesc('Select Anthropic model')
-            .addDropdown((dropdown) => {
-                dropdown.addOption('claude-sonnet-4-20250514', 'Claude Sonnet 4');
-                dropdown.addOption('claude-3-5-sonnet-20241022', 'Claude 3.5 Sonnet');
-                dropdown.addOption('claude-3-5-haiku-20241022', 'Claude 3.5 Haiku');
-                dropdown.addOption('claude-3-opus-20240229', 'Claude 3 Opus');
-                dropdown.setValue(this.plugin.settings.anthropicModel);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.anthropicModel = value;
-                    await this.plugin.saveSettings();
-                });
-            });
-    }
-
-    private _displayOpenRouterSettings(containerEl: HTMLElement): void {
-        containerEl.createEl('h3', { text: 'OpenRouter Configuration' });
-
-        new Setting(containerEl)
-            .setName('API Key')
-            .setDesc('Your OpenRouter API key')
-            .addText((text) => {
-                text.inputEl.type = 'password';
-                text.setPlaceholder('sk-or-...')
-                    .setValue(this.plugin.settings.openrouterApiKey)
-                    .onChange(async (value) => {
-                        this.plugin.settings.openrouterApiKey = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(containerEl)
-            .setName('Model')
-            .setDesc('Select OpenRouter model')
-            .addDropdown((dropdown) => {
-                dropdown.addOption('anthropic/claude-sonnet-4', 'Claude Sonnet 4');
-                dropdown.addOption('anthropic/claude-3.5-sonnet', 'Claude 3.5 Sonnet');
-                dropdown.addOption('openai/gpt-4o', 'GPT-4o');
-                dropdown.addOption('openai/gpt-4o-mini', 'GPT-4o Mini');
-                dropdown.addOption('google/gemini-pro-1.5', 'Gemini Pro 1.5');
-                dropdown.addOption('meta-llama/llama-3.1-405b-instruct', 'Llama 3.1 405B');
-                dropdown.setValue(this.plugin.settings.openrouterModel);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.openrouterModel = value;
-                    await this.plugin.saveSettings();
-                });
-            });
-    }
-
-    private _displayCommonSettings(containerEl: HTMLElement): void {
         containerEl.createEl('h3', { text: 'Generation Settings' });
 
         new Setting(containerEl)
             .setName('Temperature')
-            .setDesc('Controls randomness of output (0.0 - 1.0)')
+            .setDesc('Controls randomness (0 = focused, 1 = creative)')
             .addSlider((slider) => slider
                 .setLimits(0, 1, 0.1)
                 .setValue(this.plugin.settings.temperature)
@@ -198,35 +72,31 @@ export class OllamaSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Max Tokens')
-            .setDesc('Maximum length of generated content')
+            .setDesc('Maximum number of tokens to generate')
             .addText((text) => text
-                .setPlaceholder('16384')
+                .setPlaceholder('50000')
                 .setValue(String(this.plugin.settings.maxTokens))
                 .onChange(async (value) => {
-                    const num = parseInt(value, 10);
-                    if (!isNaN(num) && num > 0) {
-                        this.plugin.settings.maxTokens = num;
-                        await this.plugin.saveSettings();
-                    }
+                    const num = parseInt(value) || 50000;
+                    this.plugin.settings.maxTokens = num;
+                    await this.plugin.saveSettings();
                 }));
 
         new Setting(containerEl)
             .setName('Context Lines')
-            .setDesc('Number of lines to use as context for [FILL] patterns')
-            .addText((text) => text
-                .setPlaceholder('10')
-                .setValue(String(this.plugin.settings.contextLines))
+            .setDesc('Number of lines around cursor to include as context')
+            .addSlider((slider) => slider
+                .setLimits(5, 50, 5)
+                .setValue(this.plugin.settings.contextLines)
+                .setDynamicTooltip()
                 .onChange(async (value) => {
-                    const num = parseInt(value, 10);
-                    if (!isNaN(num) && num > 0) {
-                        this.plugin.settings.contextLines = num;
-                        await this.plugin.saveSettings();
-                    }
+                    this.plugin.settings.contextLines = value;
+                    await this.plugin.saveSettings();
                 }));
 
         new Setting(containerEl)
             .setName('Enable Streaming')
-            .setDesc('Show text as it generates in real-time')
+            .setDesc('Stream responses as they are generated')
             .addToggle((toggle) => toggle
                 .setValue(this.plugin.settings.streamingEnabled)
                 .onChange(async (value) => {
@@ -234,45 +104,55 @@ export class OllamaSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        new Setting(containerEl)
-            .setName('Focus Mode Hotkey')
-            .setDesc('Keyboard shortcut to enter focus mode')
-            .addText((text) => text
-                .setPlaceholder('Ctrl+Shift+F')
-                .setValue(this.plugin.settings.focusModeHotkey)
-                .onChange(async (value) => {
-                    this.plugin.settings.focusModeHotkey = value;
-                    await this.plugin.saveSettings();
-                }));
-    }
-
-    private _displayQuickActions(containerEl: HTMLElement): void {
         containerEl.createEl('h3', { text: 'Quick Actions' });
 
-        this.plugin.settings.quickActions.forEach((action, index) => {
+        for (let i = 0; i < this.plugin.settings.quickActions.length; i++) {
+            const action = this.plugin.settings.quickActions[i];
             new Setting(containerEl)
-                .setName(action.label)
-                .setDesc(action.prompt.substring(0, 50) + '...')
-                .addButton((button) => button
+                .setName(`Action ${i + 1}`)
+                .addText((text) => text
+                    .setPlaceholder('Label')
+                    .setValue(action.label)
+                    .onChange(async (value) => {
+                        this.plugin.settings.quickActions[i].label = value;
+                        await this.plugin.saveSettings();
+                    }))
+                .addText((text) => text
+                    .setPlaceholder('Prompt')
+                    .setValue(action.prompt)
+                    .onChange(async (value) => {
+                        this.plugin.settings.quickActions[i].prompt = value;
+                        await this.plugin.saveSettings();
+                    }))
+                .addButton((btn) => btn
                     .setButtonText('Remove')
                     .onClick(async () => {
-                        this.plugin.settings.quickActions.splice(index, 1);
+                        this.plugin.settings.quickActions.splice(i, 1);
                         await this.plugin.saveSettings();
                         this.display();
                     }));
-        });
+        }
 
         new Setting(containerEl)
-            .setName('Add Quick Action')
-            .addButton((button) => button
-                .setButtonText('Add')
+            .addButton((btn) => btn
+                .setButtonText('Add Action')
                 .onClick(async () => {
-                    this.plugin.settings.quickActions.push({
-                        label: 'New Action',
-                        prompt: 'Enter your prompt here'
-                    });
+                    this.plugin.settings.quickActions.push({ label: '', prompt: '' });
                     await this.plugin.saveSettings();
                     this.display();
+                }));
+
+        containerEl.createEl('h3', { text: 'Chat History' });
+
+        new Setting(containerEl)
+            .setName('Clear All History')
+            .setDesc('Remove all saved chat conversations')
+            .addButton((btn) => btn
+                .setButtonText('Clear')
+                .setWarning()
+                .onClick(async () => {
+                    this.plugin.settings.chatHistory = {};
+                    await this.plugin.saveSettings();
                 }));
     }
 }

@@ -6,7 +6,6 @@ import {
     Plugin
 } from 'obsidian';
 import { OllamaSettings, DEFAULT_SETTINGS } from './types';
-import { OllamaClient } from './api/ollama-client';
 import { AIClient } from './api/ai-client';
 import { PDFParser } from './parsers/pdf-parser';
 import { FillDetector } from './features/fill-detector';
@@ -20,7 +19,6 @@ import { OllamaSettingTab } from './settings';
 
 export default class OllamaPlugin extends Plugin {
     settings: OllamaSettings = DEFAULT_SETTINGS;
-    ollamaClient!: OllamaClient;
     aiClient!: AIClient;
     pdfParser!: PDFParser;
     fillDetector!: FillDetector;
@@ -34,7 +32,6 @@ export default class OllamaPlugin extends Plugin {
     async onload(): Promise<void> {
         await this.loadSettings();
 
-        this.ollamaClient = new OllamaClient(this.settings.ollamaUrl);
         this.aiClient = new AIClient(this.settings);
         this.pdfParser = new PDFParser();
         this.fillDetector = new FillDetector();
@@ -55,14 +52,14 @@ export default class OllamaPlugin extends Plugin {
         this.inlineAnnotation = new InlineAnnotation(
             this.app,
             this.settings,
-            this.ollamaClient,
+            this.aiClient,
             this.actionBar
         );
 
         this.focusMode = new FocusMode(
             this.app,
             this.settings,
-            this.ollamaClient,
+            this.aiClient,
             this.actionBar
         );
 
@@ -87,19 +84,19 @@ export default class OllamaPlugin extends Plugin {
 
     async saveSettings(): Promise<void> {
         await this.saveData(this.settings);
-        this.ollamaClient.setBaseUrl(this.settings.ollamaUrl);
+        this.aiClient.updateSettings(this.settings);
     }
 
     private async initializeDefaultModel(): Promise<void> {
-        if (!this.settings.defaultModel) {
+        if (!this.settings.model) {
             try {
-                const models = await this.ollamaClient.fetchModels();
+                const models = await this.aiClient.fetchModels();
                 if (models.length > 0) {
-                    this.settings.defaultModel = models[0].name;
+                    this.settings.model = models[0].name;
                     await this.saveSettings();
                 }
             } catch {
-                console.error('Failed to fetch Ollama models');
+                console.error('Failed to fetch models');
             }
         }
     }
@@ -236,14 +233,12 @@ export default class OllamaPlugin extends Plugin {
         for (const match of matches) {
             const prompt = this.fillDetector.createPrompt(match);
 
-            const response = await this.ollamaClient.generate({
-                model: this.settings.defaultModel,
-                prompt,
+            const response = await this.aiClient.chat({
+                model: this.settings.model,
+                messages: [{ role: 'user', content: prompt }],
                 stream: false,
-                options: {
-                    temperature: this.settings.temperature,
-                    num_predict: this.settings.maxTokens
-                }
+                temperature: this.settings.temperature,
+                maxTokens: this.settings.maxTokens
             });
 
             const adjustedMatch = {
@@ -252,8 +247,8 @@ export default class OllamaPlugin extends Plugin {
                 endIndex: match.endIndex + offset
             };
 
-            updatedContent = this.fillDetector.replaceFill(updatedContent, adjustedMatch, response);
-            offset += response.length - match.pattern.length;
+            updatedContent = this.fillDetector.replaceFill(updatedContent, adjustedMatch, response.content);
+            offset += response.content.length - match.pattern.length;
         }
 
         editor.setValue(updatedContent);
@@ -289,17 +284,15 @@ export default class OllamaPlugin extends Plugin {
             left: coords.left
         };
 
-        const response = await this.ollamaClient.generate({
-            model: this.settings.defaultModel,
-            prompt,
+        const response = await this.aiClient.chat({
+            model: this.settings.model,
+            messages: [{ role: 'user', content: prompt }],
             stream: false,
-            options: {
-                temperature: this.settings.temperature,
-                num_predict: this.settings.maxTokens
-            }
+            temperature: this.settings.temperature,
+            maxTokens: this.settings.maxTokens
         });
 
-        this.actionBar.show(response, responsePosition, async (actionResult) => {
+        this.actionBar.show(response.content, responsePosition, async (actionResult) => {
             switch (actionResult.type) {
                 case 'insert':
                     this.actionBar.insertBelow(editor, actionResult.content);

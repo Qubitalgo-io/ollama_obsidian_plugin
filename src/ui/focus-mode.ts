@@ -1,12 +1,12 @@
 import { App, Editor } from 'obsidian';
-import { OllamaClient } from '../api/ollama-client';
+import { AIClient } from '../api/ai-client';
 import { OllamaSettings } from '../types';
 import { ActionBar } from './action-bar';
 
 export class FocusMode {
     private _app: App;
     private _settings: OllamaSettings;
-    private _client: OllamaClient;
+    private _client: AIClient;
     private _actionBar: ActionBar;
     private _overlayEl: HTMLElement | null = null;
     private _contentEl: HTMLTextAreaElement | null = null;
@@ -18,7 +18,7 @@ export class FocusMode {
     constructor(
         app: App,
         settings: OllamaSettings,
-        client: OllamaClient,
+        client: AIClient,
         actionBar: ActionBar
     ) {
         this._app = app;
@@ -153,18 +153,16 @@ export class FocusMode {
         }
 
         this._responseEl.textContent = 'Generating...';
-        const model = this._settings.defaultModel || 'llama3';
+        const model = this._settings.model || 'llama3';
 
         try {
-            await this._client.generate(
+            await this._client.chat(
                 {
                     model,
-                    prompt: fullPrompt,
+                    messages: [{ role: 'user', content: fullPrompt }],
                     stream: this._settings.streamingEnabled,
-                    options: {
-                        temperature: this._settings.temperature,
-                        num_predict: this._settings.maxTokens
-                    }
+                    temperature: this._settings.temperature,
+                    maxTokens: this._settings.maxTokens
                 },
                 (chunk) => {
                     if (this._responseEl) {

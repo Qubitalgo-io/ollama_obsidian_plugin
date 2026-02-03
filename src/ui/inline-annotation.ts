@@ -1,12 +1,12 @@
 import { App, Editor } from 'obsidian';
-import { OllamaClient } from '../api/ollama-client';
+import { AIClient } from '../api/ai-client';
 import { OllamaSettings } from '../types';
 import { ActionBar } from './action-bar';
 
 export class InlineAnnotation {
     private _app: App;
     private _settings: OllamaSettings;
-    private _client: OllamaClient;
+    private _client: AIClient;
     private _actionBar: ActionBar;
     private _containerEl: HTMLElement | null = null;
     private _responseEl: HTMLElement | null = null;
@@ -14,7 +14,7 @@ export class InlineAnnotation {
     constructor(
         app: App,
         settings: OllamaSettings,
-        client: OllamaClient,
+        client: AIClient,
         actionBar: ActionBar
     ) {
         this._app = app;
@@ -75,21 +75,19 @@ export class InlineAnnotation {
     private async _handleAction(editor: Editor, selection: string, promptPrefix: string): Promise<void> {
         if (!this._responseEl) return;
 
-        const model = this._settings.defaultModel || 'llama3';
+        const model = this._settings.model || 'llama3';
         const prompt = `${promptPrefix}\n\n${selection}`;
 
         this._responseEl.textContent = 'Generating...';
 
         try {
-            const response = await this._client.generate(
+            const response = await this._client.chat(
                 {
                     model,
-                    prompt,
+                    messages: [{ role: 'user', content: prompt }],
                     stream: this._settings.streamingEnabled,
-                    options: {
-                        temperature: this._settings.temperature,
-                        num_predict: this._settings.maxTokens
-                    }
+                    temperature: this._settings.temperature,
+                    maxTokens: this._settings.maxTokens
                 },
                 (chunk) => {
                     if (this._responseEl) {
@@ -101,7 +99,7 @@ export class InlineAnnotation {
                 }
             );
 
-            this._showResponseActions(editor, response);
+            this._showResponseActions(editor, response.content);
 
         } catch (error: any) {
             this._responseEl.textContent = `Error: ${error.message}`;

@@ -1,15 +1,7 @@
-export type AIProvider = 'ollama' | 'openai' | 'anthropic' | 'openrouter';
-
 export interface OllamaSettings {
-    provider: AIProvider;
-    ollamaUrl: string;
-    openaiApiKey: string;
-    anthropicApiKey: string;
-    openrouterApiKey: string;
-    defaultModel: string;
-    openaiModel: string;
-    anthropicModel: string;
-    openrouterModel: string;
+    apiEndpoint: string;
+    apiKey: string;
+    model: string;
     temperature: number;
     maxTokens: number;
     contextLines: number;
@@ -106,15 +98,9 @@ export interface CodeBlockInfo {
 }
 
 export const DEFAULT_SETTINGS: OllamaSettings = {
-    provider: 'ollama',
-    ollamaUrl: 'http://localhost:11434',
-    openaiApiKey: '',
-    anthropicApiKey: '',
-    openrouterApiKey: '',
-    defaultModel: '',
-    openaiModel: 'gpt-4o',
-    anthropicModel: 'claude-sonnet-4-20250514',
-    openrouterModel: 'anthropic/claude-sonnet-4',
+    apiEndpoint: 'http://localhost:11434',
+    apiKey: '',
+    model: '',
     temperature: 0.7,
     maxTokens: 50000,
     contextLines: 10,

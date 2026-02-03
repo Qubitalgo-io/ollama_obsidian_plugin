@@ -15,6 +15,7 @@ import { ChatPopover } from './ui/chat-popover';
 import { ActionBar } from './ui/action-bar';
 import { InlineAnnotation } from './ui/inline-annotation';
 import { FocusMode } from './ui/focus-mode';
+import { InlineChat } from './ui/inline-chat';
 import { OllamaSettingTab } from './settings';
 
 export default class OllamaPlugin extends Plugin {
@@ -28,6 +29,7 @@ export default class OllamaPlugin extends Plugin {
     actionBar!: ActionBar;
     inlineAnnotation!: InlineAnnotation;
     focusMode!: FocusMode;
+    inlineChat!: InlineChat;
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -61,6 +63,13 @@ export default class OllamaPlugin extends Plugin {
             this.settings,
             this.aiClient,
             this.actionBar
+        );
+
+        this.inlineChat = new InlineChat(
+            this.app,
+            this.settings,
+            this.aiClient,
+            this.pdfParser
         );
 
         this.addSettingTab(new OllamaSettingTab(this.app, this));
@@ -161,6 +170,17 @@ export default class OllamaPlugin extends Plugin {
                 }
             }
         });
+
+        this.addCommand({
+            id: 'enter-chat-mode',
+            name: 'Inline Chat',
+            editorCallback: (editor: Editor, ctx: MarkdownView | MarkdownFileInfo) => {
+                const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+                if (view?.file) {
+                    this.inlineChat.show(editor, view);
+                }
+            }
+        });
     }
 
     private registerEditorEvents(): void {
@@ -177,11 +197,11 @@ export default class OllamaPlugin extends Plugin {
 
     private handleChatHotkey(evt: KeyboardEvent): void {
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!view) return;
+        if (!view?.file) return;
 
         evt.preventDefault();
         const editor = view.editor;
-        this.openChatPopover(editor, view);
+        this.inlineChat.show(editor, view);
     }
 
     private openChatPopover(editor: Editor, view: MarkdownView): void {

@@ -40,6 +40,38 @@ export class PDFParser {
         }
     }
 
+    async parseFromBuffer(arrayBuffer: ArrayBuffer, filename: string): Promise<PDFContent> {
+        try {
+            const loadingTask = pdfjsLib.getDocument({
+                data: new Uint8Array(arrayBuffer),
+                verbosity: 0
+            });
+            
+            const pdf = await loadingTask.promise;
+
+            let fullText = '';
+            const pageCount = pdf.numPages;
+
+            for (let i = 1; i <= pageCount; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                    .map((item: any) => item.str)
+                    .join(' ');
+                fullText += pageText + '\n\n';
+            }
+
+            return {
+                filename,
+                text: fullText.trim(),
+                pageCount
+            };
+        } catch (error) {
+            console.error('PDF parsing error:', error);
+            throw error;
+        }
+    }
+
     async parseMultiple(files: File[]): Promise<PDFContent[]> {
         const results: PDFContent[] = [];
         for (const file of files) {

@@ -1,3 +1,260 @@
+.grok-chat-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #0d0d0d;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.grok-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: #0d0d0d;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.grok-chat-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.grok-chat-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.grok-model-select {
+    padding: 8px 12px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.grok-model-select:focus {
+    outline: none;
+    border-color: #3a3a3a;
+}
+
+.grok-exit-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #888;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.grok-exit-btn:hover {
+    background: #1a1a1a;
+    color: #fff;
+}
+
+.grok-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.grok-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: #666;
+}
+
+.grok-welcome h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 8px 0;
+}
+
+.grok-welcome p {
+    font-size: 15px;
+    color: #666;
+    margin: 0;
+}
+
+.grok-message {
+    display: flex;
+    gap: 16px;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.grok-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.grok-user .grok-avatar {
+    background: #2563eb;
+    color: #fff;
+}
+
+.grok-assistant .grok-avatar {
+    background: #1a1a1a;
+    color: #fff;
+    border: 1px solid #2a2a2a;
+}
+
+.grok-content {
+    flex: 1;
+    padding: 12px 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #e5e5e5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.grok-user .grok-content {
+    color: #fff;
+}
+
+.grok-thinking .grok-content {
+    color: #666;
+}
+
+.grok-error .grok-content {
+    color: #ef4444;
+}
+
+.grok-input-area {
+    padding: 16px 24px 24px;
+    background: #0d0d0d;
+    border-top: 1px solid #1a1a1a;
+}
+
+.grok-drop-zone {
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px dashed #2a2a2a;
+    border-radius: 8px;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    transition: all 0.15s;
+}
+
+.grok-drop-zone.grok-drop-active {
+    border-color: #3a3a3a;
+    background: #1a1a1a;
+    color: #888;
+}
+
+.grok-pdf-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.grok-pdf-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #1a1a1a;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #888;
+}
+
+.grok-pdf-remove {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.grok-pdf-remove:hover {
+    color: #ef4444;
+}
+
+.grok-input-row {
+    display: flex;
+    gap: 12px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.grok-input {
+    flex: 1;
+    padding: 14px 18px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 24px;
+    color: #fff;
+    font-size: 15px;
+    font-family: inherit;
+    resize: none;
+    line-height: 1.5;
+}
+
+.grok-input:focus {
+    outline: none;
+    border-color: #3a3a3a;
+}
+
+.grok-input::placeholder {
+    color: #666;
+}
+
+.grok-send-btn {
+    width: 48px;
+    height: 48px;
+    background: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+
+.grok-send-btn:hover {
+    background: #e5e5e5;
+}
+
+.grok-send-btn svg {
+    width: 20px;
+    height: 20px;
+    color: #0d0d0d;
+}
+
 .ollama-chat-popover {
     position: fixed;
     width: 520px;
@@ -39,15 +296,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-}
-
-.ollama-provider-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: var(--background-primary);
-    padding: 4px 8px;
-    border-radius: 2px;
 }
 
 .ollama-model-select {
@@ -457,4 +705,39 @@
 
 .ollama-focus-actions button:hover {
     background: var(--background-secondary);
+}
+
+.callout[data-callout="ai"] {
+    --callout-color: 0, 33, 71;
+    --callout-icon: lucide-sparkles;
+    background-color: rgba(0, 33, 71, 0.15);
+    border-left: 4px solid #002147;
+}
+
+.callout[data-callout="ai"] .callout-title {
+    color: #4a90d9;
+    font-weight: 600;
+}
+
+.callout[data-callout="ai"] .callout-content {
+    color: var(--text-normal);
+    line-height: 1.6;
+}
+
+.callout[data-callout="ai"] .callout-content p {
+    margin: 0.5em 0;
+}
+
+.callout[data-callout="ai"] .callout-content code {
+    background: rgba(0, 33, 71, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.callout[data-callout="ai"] .callout-content pre {
+    background: rgba(0, 33, 71, 0.25);
+    border: 1px solid rgba(0, 33, 71, 0.4);
+    border-radius: 6px;
+    padding: 12px;
+    overflow-x: auto;
 }

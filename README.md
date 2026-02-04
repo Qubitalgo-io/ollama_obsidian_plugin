@@ -1,10 +1,11 @@
-# Ollama Obsidian Plugin
+# LLM Obsidian Plugin
 
-An Obsidian plugin that integrates AI language models directly into your note-taking workflow. Generate content, summarize embedded PDFs, and interact with AI through an inline chat interface. Supports Ollama, OpenAI, Anthropic, Grok, Qwen, and any OpenAI-compatible API.
+An Obsidian plugin that integrates AI language models directly into your note-taking workflow. Generate content, summarize embedded PDFs, and interact with AI through an inline chat interface. Compatible with any OpenAI-compatible API including local and cloud providers.
 
 ## Table of Contents
 
 - [Features](#features)
+- [Supported Providers](#supported-providers)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -18,7 +19,7 @@ An Obsidian plugin that integrates AI language models directly into your note-ta
 
 Press `Cmd+O` or `Cmd+Space` (Mac) to open a floating inline chat input at your cursor position. The inline chat provides:
 
-- Floating input box with Oxford blue styling
+- Floating input box at cursor position
 - Automatic note context awareness
 - Embedded PDF text extraction
 - Real-time streaming responses inserted directly into your note
@@ -61,7 +62,7 @@ The plugin detects fenced code blocks and offers language-aware actions:
 
 ### Focus Mode
 
-Enter a distraction-free writing environment with AI assistance. Focus mode provides:
+Enter a distraction-free writing environment with AI assistance:
 
 - Full-screen editing interface
 - Minimal UI elements
@@ -77,35 +78,41 @@ After content generation, an action bar appears with options:
 - New Note: Create a new note with the content
 - Dismiss: Discard generated content
 
-### Multi-Provider Support
+## Supported Providers
 
-The plugin supports any OpenAI-compatible API endpoint:
+The plugin works with any OpenAI-compatible API endpoint:
 
-- Ollama (local)
-- OpenAI
-- Anthropic
-- Grok (xAI)
-- Qwen
-- OpenRouter
-- Any custom OpenAI-compatible endpoint
+| Provider | Endpoint | Notes |
+|----------|----------|-------|
+| Ollama | `http://localhost:11434` | Local, no API key required |
+| OpenAI | `https://api.openai.com/v1` | GPT-4, GPT-3.5, etc. |
+| Anthropic | `https://api.anthropic.com/v1` | Claude models |
+| Grok | `https://api.x.ai/v1` | xAI models |
+| Qwen | `https://dashscope.aliyuncs.com/compatible-mode/v1` | Alibaba models |
+| OpenRouter | `https://openrouter.ai/api/v1` | Multi-provider gateway |
+| Together AI | `https://api.together.xyz/v1` | Open source models |
+| Groq | `https://api.groq.com/openai/v1` | Fast inference |
+| Any OpenAI-compatible | Custom endpoint | Self-hosted or other providers |
 
 ## Requirements
 
 - Obsidian v1.0.0 or higher
-- Access to an AI API (local Ollama or cloud provider)
+- Access to an AI API (local or cloud)
 
-### Using Ollama (Local)
+### Local Setup (Ollama)
 
 1. Visit [ollama.ai](https://ollama.ai) and download the installer
 2. Install and launch Ollama
 3. Download a model: `ollama pull llama3`
 4. Configure the plugin with endpoint `http://localhost:11434`
+5. Leave API key empty
 
-### Using Cloud Providers
+### Cloud Setup
 
 1. Obtain an API key from your preferred provider
-2. Configure the API endpoint and key in plugin settings
-3. Enter your model name (e.g., `gpt-4`, `claude-3-opus`, `grok-2`)
+2. Configure the API endpoint in plugin settings
+3. Enter your API key
+4. Specify your model name (e.g., `gpt-4o`, `claude-3-opus-20240229`, `grok-2`)
 
 ## Installation
 
@@ -113,7 +120,7 @@ The plugin supports any OpenAI-compatible API endpoint:
 
 1. Open Obsidian Settings
 2. Navigate to Community Plugins and disable Safe Mode
-3. Click Browse and search for "Ollama"
+3. Click Browse and search for "LLM"
 4. Install the plugin and enable it
 
 ### Manual Installation
@@ -157,27 +164,17 @@ The plugin supports any OpenAI-compatible API endpoint:
 
 ## Configuration
 
-Access plugin settings through Obsidian Settings > Ollama.
+Access plugin settings through Obsidian Settings > LLM.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
 | API Endpoint | Server address for AI provider | `http://localhost:11434` |
-| API Key | Authentication key (leave empty for Ollama) | Empty |
+| API Key | Authentication key (leave empty for local providers) | Empty |
 | Model | Model name for generation | Auto-detected for Ollama |
 | Temperature | Controls randomness of output (0.0-1.0) | `0.7` |
 | Max Tokens | Maximum length of generated content | `50000` |
 | Context Lines | Lines of context for fill patterns | `10` |
 | Streaming | Enable real-time response streaming | `true` |
-
-### API Endpoint Examples
-
-| Provider | Endpoint |
-|----------|----------|
-| Ollama | `http://localhost:11434` |
-| OpenAI | `https://api.openai.com/v1` |
-| Anthropic | `https://api.anthropic.com/v1` |
-| Grok | `https://api.x.ai/v1` |
-| OpenRouter | `https://openrouter.ai/api/v1` |
 
 ### Keyboard Shortcuts
 
@@ -208,30 +205,25 @@ npm run dev
 ### Project Structure
 
 ```
-ollama-obsidian/
-├── src/
-│   ├── main.ts
-│   ├── settings.ts
-│   ├── api/
-│   │   └── ai-client.ts
-│   ├── parsers/
-│   │   └── pdf-parser.ts
-│   ├── ui/
-│   │   ├── inline-chat.ts
-│   │   ├── chat-popover.ts
-│   │   ├── action-bar.ts
-│   │   ├── inline-annotation.ts
-│   │   └── focus-mode.ts
-│   ├── features/
-│   │   ├── fill-detector.ts
-│   │   ├── code-actions.ts
-│   │   └── conversation.ts
-│   └── types/
-│       └── index.ts
-├── styles.css
-├── manifest.json
-├── package.json
-└── tsconfig.json
+src/
+├── main.ts
+├── settings.ts
+├── api/
+│   └── ai-client.ts
+├── parsers/
+│   └── pdf-parser.ts
+├── ui/
+│   ├── inline-chat.ts
+│   ├── chat-popover.ts
+│   ├── action-bar.ts
+│   ├── inline-annotation.ts
+│   └── focus-mode.ts
+├── features/
+│   ├── fill-detector.ts
+│   ├── code-actions.ts
+│   └── conversation.ts
+└── types/
+    └── index.ts
 ```
 
 ## License
